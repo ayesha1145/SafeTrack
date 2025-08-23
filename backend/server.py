@@ -1,3 +1,21 @@
+# ============================================================
+# SafeTrack Backend (FastAPI)
+# Author: [Your Name]
+# Description: This is the backend API for the SafeTrack system,
+# a student safety and emergency support application.
+# 
+# Key Features in this file:
+# - MongoDB database connection
+# - Authentication with JWT and password hashing
+# - Student registration & login
+# - Emergency alert creation & retrieval
+# - Multilingual support (English & Bengali)
+# ============================================================
+
+# ------------------------------------------------------------
+# Import dependencies
+# --------------------------------------
+
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
@@ -15,10 +33,16 @@ import jwt
 import asyncio
 from bson import ObjectId
 
+# ------------------------------------------------------------
+# Load environment variables from .env file
+# ------------------------------------------------------------
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
-# MongoDB connection
+# ------------------------------------------------------------
+# Database setup (MongoDB)
+# ------------------------------------------------------------
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
