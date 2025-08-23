@@ -89,12 +89,22 @@ translations = {
 def get_translation(key: str, lang: str = "en") -> str:
     return translations.get(lang, translations["en"]).get(key, key)
 
-# Helper functions
+# ------------------------------------------------
+# Password hashing utilities
+# ------------------------------------------------
+# These functions handle secure password storage
+# and verification using bcrypt
+
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+# ------------------------------------------------
+# JWT Token creation
+# ------------------------------------------------
+# Creates signed JWT tokens for authentication
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
@@ -193,7 +203,12 @@ class ApiResponse(BaseModel):
 async def get_api_status():
     return {"message": "SafeTrack API is running", "status": "healthy", "timestamp": datetime.now(timezone.utc)}
 
-# Authentication endpoints
+# -------------------------------------------------
+# Authentication routes
+# -------------------------------------------------
+# /register -> for new student signup
+# /login -> verify credentials and return JWT
+
 @api_router.post("/auth/register", response_model=ApiResponse)
 async def register_student(student: StudentCreate, lang: str = "en"):
     # Check if user already exists
