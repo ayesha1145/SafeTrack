@@ -238,7 +238,8 @@ async def register_student(student: StudentCreate, lang: str = "en"):
         lang=lang
     )
 
-@api_router.post("/auth/login", response_model=Token)
+
+@api_router.post("/auth/login", response_model=Token) 
 async def login_student(login_data: StudentLogin, lang: str = "en"):
     # Find user
     user = await db.students.find_one({"student_id": login_data.student_id})
@@ -261,7 +262,12 @@ async def login_student(login_data: StudentLogin, lang: str = "en"):
         user=student_obj
     )
 
-# Student endpoints
+# -------------------------------------------------
+# Student profile management
+# -------------------------------------------------
+# Handles creating, updating, and retrieving student info
+# Includes student ID, blood group, emergency contacts
+
 @api_router.get("/students/me", response_model=Student)
 async def get_current_student_profile(current_user: Student = Depends(get_current_user)):
     return current_user
