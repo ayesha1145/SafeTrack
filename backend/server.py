@@ -431,4 +431,36 @@ async def create_admin_user():
             "is_admin": True
         }
         await db.students.insert_one(admin_user)
-        logger.info("Admin user created with ID: admin, Password: admin123")
+        logger.info("Admin user created with ID: admin, Password: admin123") 
+
+
+  # ------------------------------------------------------------
+# Multilingual support (English & Bengali) — Design Notes
+# ------------------------------------------------------------
+# Goal: Allow clients to request responses in English or Bengali
+# using a query param (?lang=en or ?lang=bn) without changing
+# core business logic.
+#
+# Sketch:
+# SUPPORTED_LANGS = {"en", "bn"}
+# TRANSLATIONS = {
+#   "en": {"alert_created": "Emergency alert created",
+#          "active": "active", "resolved": "resolved"},
+#   "bn": {"alert_created": "জরুরি সতর্কতা তৈরি হয়েছে",
+#          "active": "চলমান", "resolved": "সমাধান হয়েছে"}
+# }
+#
+# Helper (pseudo):
+# def t(key: str, lang: str) -> str:
+#     lang = lang if lang in SUPPORTED_LANGS else "en"
+#     return TRANSLATIONS[lang].get(key, key)
+#
+# Usage idea:
+# - When creating an alert, return {"message": t("alert_created", lang)}
+# - When listing alerts, map each `status` through t(status, lang)
+#
+# Notes:
+# - Keep translations in a small dict for now; later can move to /locales/*.json
+# - Default to English when ?lang is missing/invalid
+# - This design keeps API stable and adds i18n progressively
+      
