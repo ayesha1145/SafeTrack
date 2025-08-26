@@ -300,7 +300,14 @@ async def get_all_students(current_user: Student = Depends(get_current_user)):
     students = await db.students.find({}, {"password_hash": 0}).to_list(1000)
     return [Student(**{k: v for k, v in student.items() if k != "_id"}) for student in students]
 
-# Alert endpoints
+# -------------------------------------------------
+# Emergency alerts
+# -------------------------------------------------
+# Students can create alerts that include their profile info
+# (ID, name, email, blood group, contacts, location, timestamp).
+# Admins can view all alerts (active/resolved) and update their status.
+# Non-admin students can only view their own alerts.
+
 @api_router.post("/alerts", response_model=ApiResponse)
 async def create_emergency_alert(
     alert_data: AlertCreate,
