@@ -78,3 +78,6 @@ agenthub/agents/youtube/db
 
 # Mobile development
 android-sdk/ 
+
+# SafeTrack custom ignores
+.env.local
