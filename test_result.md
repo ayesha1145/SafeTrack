@@ -1,3 +1,7 @@
+# Test Results (placeholder)
+
+This file will track SafeTrack test outcomes in future iterations.
+
 #====================================================================================================
 # START - Testing Protocol - DO NOT EDIT OR REMOVE THIS SECTION
 #====================================================================================================
