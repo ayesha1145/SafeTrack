@@ -12,7 +12,7 @@ from datetime import datetime
 import time
 
 class SafeTrackAPITester:
-    def __init__(self, base_url="https://emergency-hub-22.preview.emergentagent.com"):
+    def __init__(self, base_url="https://safetrack-backend.onrender.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.admin_token = None
