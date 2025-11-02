@@ -1,5 +1,5 @@
 # 🛰️ SafeTrack – Student Safety & Emergency Response Platform
-> A full-stack web application ensuring secure, real-time emergency reporting and student safety management.
+> A real-time safety communication platform built with FastAPI and React for secure incident reporting and response coordination.
 
 SafeTrack is a full-featured, privacy-first safety platform built for instant emergency communication. It connects students and administrators through live alerts, secure authentication, multilingual access (English + Bengali), and data-driven response tracking — enabling faster, smarter crisis management. 
 
