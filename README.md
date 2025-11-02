@@ -1,7 +1,11 @@
 # 🛰️ SafeTrack – Student Safety & Emergency Response Platform
 > A full-stack web application ensuring secure, real-time emergency reporting and student safety management.
 
-SafeTrack is a full-featured, privacy-first safety platform built for instant emergency communication. It connects students and administrators through live alerts, secure authentication, multilingual access (English + Bengali), and data-driven response tracking — enabling faster, smarter crisis management.
+SafeTrack is a full-featured, privacy-first safety platform built for instant emergency communication. It connects students and administrators through live alerts, secure authentication, multilingual access (English + Bengali), and data-driven response tracking — enabling faster, smarter crisis management. 
+
+> **Inspiration:** SafeTrack was inspired by the tragic air crash involving students from Milestone School, Bangladesh.  
+> This incident motivated the development of a technology-driven platform aimed at improving emergency communication, student safety, and crisis response efficiency.
+
 
 ## 🚀 Overview
 SafeTrack provides an interactive safety system designed to protect students during emergencies. It integrates a **FastAPI backend** for secure data operations with a **React frontend** for real-time alert visualization and management. Students can report incidents, view their alert history, and administrators can oversee live cases — all through one centralized, multilingual dashboard.
