@@ -1,182 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button } from './components/ui/button';
-import { Input } from './components/ui/input';
-import { Label } from './components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
-import { Badge } from './components/ui/badge';
-import { Alert, AlertDescription } from './components/ui/alert';
-import { Separator } from './components/ui/separator';
-import { Shield, AlertTriangle, Users, Phone, Mail, MapPin, Clock, User, Languages } from 'lucide-react';
+import { Shield, AlertTriangle, Phone, Mail, MapPin, Clock, User, Languages, CheckCircle, Bell, LogOut } from 'lucide-react';
 
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
-const API = `${BACKEND_URL}/api`;
-
-// Auth Context
+const API = 'http://127.0.0.1:8000/api';
 const AuthContext = React.createContext();
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [language, setLanguage] = useState('en');
-
-  useEffect(() => {
-    if (token) {
-      fetchUserProfile();
-    }
-  }, [token]);
-
+  useEffect(() => { if (token) fetchUserProfile(); }, [token]);
   const fetchUserProfile = async () => {
-    try {
-      const response = await axios.get(`${API}/students/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUser(response.data);
-    } catch (error) {
-      console.error('Failed to fetch user profile:', error);
-      logout();
-    }
+    try { const r = await axios.get(`${API}/students/me`, { headers: { Authorization: `Bearer ${token}` } }); setUser(r.data); }
+    catch { logout(); }
   };
-
-  const login = (token, userData) => {
-    localStorage.setItem('token', token);
-    setToken(token);
-    setUser(userData);
-  };
-
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
-  };
-
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'en' ? 'bn' : 'en');
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, token, language, login, logout, toggleLanguage, fetchUserProfile }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const login = (tok, userData) => { localStorage.setItem('token', tok); setToken(tok); setUser(userData); };
+  const logout = () => { localStorage.removeItem('token'); setToken(null); setUser(null); };
+  const toggleLanguage = () => setLanguage(p => p === 'en' ? 'bn' : 'en');
+  return <AuthContext.Provider value={{ user, token, language, login, logout, toggleLanguage, fetchUserProfile }}>{children}</AuthContext.Provider>;
 };
 
-const useAuth = () => {
-  const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+const useAuth = () => React.useContext(AuthContext);
+
+const T = {
+  en: { appName:'SafeTrack', tagline:'Student Safety & Emergency Support', login:'Login', register:'Register', studentId:'Student ID', password:'Password', name:'Full Name', email:'Email Address', bloodGroup:'Blood Group', location:'Current Location', emergencyContacts:'Emergency Contacts', contactName:'Contact Name', relationship:'Relationship', phone:'Phone Number', addContact:'Add Contact', emergencyAlert:'EMERGENCY ALERT', sendAlert:'Send Emergency Alert', profile:'My Profile', activeAlerts:'Active Alerts', logout:'Logout', admin:'Admin Panel', welcome:'Welcome', noAlerts:'No active alerts', alertSent:'Emergency alert sent!', updating:'Sending…', save:'Save Changes', saving:'Saving…' },
+  bn: { appName:'SafeTrack', tagline:'ছাত্রছাত্রী নিরাপত্তা', login:'লগইন', register:'নিবন্ধন', studentId:'ছাত্র আইডি', password:'পাসওয়ার্ড', name:'পূর্ণ নাম', email:'ইমেইল', bloodGroup:'রক্তের গ্রুপ', location:'অবস্থান', emergencyContacts:'জরুরি যোগাযোগ', contactName:'নাম', relationship:'সম্পর্ক', phone:'ফোন', addContact:'যোগ করুন', emergencyAlert:'জরুরি সতর্কতা', sendAlert:'পাঠান', profile:'প্রোফাইল', activeAlerts:'সক্রিয়', logout:'লগআউট', admin:'অ্যাডমিন', welcome:'স্বাগতম', noAlerts:'কোন সতর্কতা নেই', alertSent:'পাঠানো হয়েছে!', updating:'পাঠানো হচ্ছে…', save:'সংরক্ষণ', saving:'সংরক্ষণ হচ্ছে…' }
 };
 
-// Translations
-const translations = {
-  en: {
-    appName: 'SafeTrack',
-    tagline: 'Student Safety & Emergency Support',
-    login: 'Login',
-    register: 'Register',
-    studentId: 'Student ID',
-    password: 'Password',
-    name: 'Full Name',
-    email: 'Email Address',
-    bloodGroup: 'Blood Group',
-    location: 'Current Location',
-    emergencyContacts: 'Emergency Contacts',
-    contactName: 'Contact Name',
-    relationship: 'Relationship',
-    phone: 'Phone Number',
-    addContact: 'Add Emergency Contact',
-    emergencyAlert: 'EMERGENCY ALERT',
-    sendAlert: 'Send Emergency Alert',
-    profile: 'My Profile',
-    dashboard: 'Emergency Dashboard',
-    activeAlerts: 'Active Alerts',
-    logout: 'Logout',
-    admin: 'Admin Panel',
-    welcome: 'Welcome',
-    noAlerts: 'No active alerts',
-    alertSent: 'Emergency alert sent successfully!',
-    updating: 'Updating...',
-    save: 'Save Changes'
-  },
-  bn: {
-    appName: 'SafeTrack',
-    tagline: 'ছাত্রছাত্রী নিরাপত্তা ও জরুরি সহায়তা',
-    login: 'লগইন',
-    register: 'নিবন্ধন',
-    studentId: 'ছাত্র আইডি',
-    password: 'পাসওয়ার্ড',
-    name: 'পূর্ণ নাম',
-    email: 'ইমেইল ঠিকানা',
-    bloodGroup: 'রক্তের গ্রুপ',
-    location: 'বর্তমান অবস্থান',
-    emergencyContacts: 'জরুরি যোগাযোগ',
-    contactName: 'যোগাযোগকারীর নাম',
-    relationship: 'সম্পর্ক',
-    phone: 'ফোন নম্বর',
-    addContact: 'জরুরি যোগাযোগ যোগ করুন',
-    emergencyAlert: 'জরুরি সতর্কতা',
-    sendAlert: 'জরুরি সতর্কতা পাঠান',
-    profile: 'আমার প্রোফাইল',
-    dashboard: 'জরুরি ড্যাশবোর্ড',
-    activeAlerts: 'সক্রিয় সতর্কতা',
-    logout: 'লগআউট',
-    admin: 'অ্যাডমিন প্যানেল',
-    welcome: 'স্বাগতম',
-    noAlerts: 'কোন সক্রিয় সতর্কতা নেই',
-    alertSent: 'জরুরি সতর্কতা সফলভাবে পাঠানো হয়েছে!',
-    updating: 'আপডেট হচ্ছে...',
-    save: 'পরিবর্তন সংরক্ষণ করুন'
-  }
-};
+const useT = () => { const { language } = useAuth(); return k => T[language][k] || k; };
 
-const useTranslation = () => {
-  const { language } = useAuth();
-  const t = (key) => translations[language][key] || key;
-  return { t, language };
-};
-
-// Components
 const Header = () => {
-  const { user, logout, toggleLanguage } = useAuth();
-  const { t, language } = useTranslation();
-
+  const { user, logout, toggleLanguage, language } = useAuth();
+  const t = useT();
   return (
-    <header className="bg-white shadow-sm border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
-            <Shield className="h-8 w-8 text-red-600" />
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{t('appName')}</h1>
-              <p className="text-xs text-gray-600">{t('tagline')}</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center space-x-4">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={toggleLanguage}
-              className="flex items-center space-x-1"
-            >
-              <Languages className="h-4 w-4" />
-              <span>{language === 'en' ? 'বাংলা' : 'English'}</span>
-            </Button>
-            
-            {user && (
-              <>
-                <span className="text-sm text-gray-700">{t('welcome')}, {user.name}</span>
-                <Button variant="outline" size="sm" onClick={logout}>
-                  {t('logout')}
-                </Button>
-              </>
-            )}
-          </div>
+    <header className="app-header">
+      <div className="header-inner">
+        <div className="header-brand">
+          <div className="header-logo"><Shield size={18} /></div>
+          <div><div className="header-title">{t('appName')}</div><div className="header-subtitle">{t('tagline')}</div></div>
+        </div>
+        <div className="header-actions">
+          <button className="btn-ghost" onClick={toggleLanguage}><Languages size={15} />{language === 'en' ? 'বাংলা' : 'English'}</button>
+          {user && <><span className="header-user">{t('welcome')}, {user.name}</span><button className="btn-ghost" onClick={logout}><LogOut size={15} />{t('logout')}</button></>}
         </div>
       </div>
     </header>
@@ -184,362 +51,154 @@ const Header = () => {
 };
 
 const LoginRegister = () => {
-  const [activeTab, setActiveTab] = useState('login');
-  const [formData, setFormData] = useState({
-    studentId: '',
-    password: '',
-    name: '',
-    email: '',
-    bloodGroup: '',
-    location: ''
-  });
+  const [tab, setTab] = useState('login');
+  const [msg, setMsg] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const { login, language } = useAuth();
-  const { t } = useTranslation();
+  const t = useT();
+  const sidRef = useRef();
+  const pwdRef = useRef();
+  const nameRef = useRef();
+  const emailRef = useRef();
+  const bgRef = useRef();
+  const locRef = useRef();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
-    setError('');
-
+    setMsg({ text: '', type: '' });
     try {
-      if (activeTab === 'login') {
-        const response = await axios.post(`${API}/auth/login?lang=${language}`, {
-          student_id: formData.studentId,
-          password: formData.password
+      if (tab === 'login') {
+        const res = await axios.post(`${API}/auth/login?lang=${language}`, {
+          student_id: sidRef.current.value,
+          password: pwdRef.current.value
         });
-        login(response.data.access_token, response.data.user);
+        login(res.data.access_token, res.data.user);
+        window.location.href = '/';
       } else {
         await axios.post(`${API}/auth/register?lang=${language}`, {
-          name: formData.name,
-          student_id: formData.studentId,
-          email: formData.email,
-          password: formData.password,
-          blood_group: formData.bloodGroup,
-          location: formData.location
+          name: nameRef.current.value,
+          student_id: sidRef.current.value,
+          email: emailRef.current.value,
+          password: pwdRef.current.value,
+          blood_group: bgRef.current.value,
+          location: locRef.current?.value || ''
         });
-        setActiveTab('login');
-        setError('Registration successful! Please login.');
+        setTab('login');
+        setMsg({ text: 'Registered! Please login.', type: 'success' });
       }
-    } catch (error) {
-      setError(error.response?.data?.detail || 'An error occurred');
+    } catch (err) {
+      setMsg({ text: err.response?.data?.detail || 'An error occurred', type: 'error' });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-red-50 to-blue-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Shield className="h-12 w-12 text-red-600" />
+    <div className="login-page">
+      <div className="login-hero">
+        <div className="hero-content">
+          <div className="hero-badge"><Shield size={12} /> Emergency Response Platform</div>
+          <h1 className="hero-title">Stay Safe. <span>Stay Connected.</span></h1>
+          <p className="hero-desc">A real-time safety platform built for students — instant emergency alerts, secure authentication, and bilingual support.</p>
+          <div className="hero-stats">
+            <div className="stat-item"><div className="stat-number">65%</div><div className="stat-label">Faster alerts</div></div>
+            <div className="stat-item"><div className="stat-number">2K+</div><div className="stat-label">Users protected</div></div>
+            <div className="stat-item"><div className="stat-number">2</div><div className="stat-label">Languages</div></div>
           </div>
-          <CardTitle className="text-2xl">{t('appName')}</CardTitle>
-          <CardDescription>{t('tagline')}</CardDescription>
-        </CardHeader>
-        
-        <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">{t('login')}</TabsTrigger>
-              <TabsTrigger value="register">{t('register')}</TabsTrigger>
-            </TabsList>
-            
-            <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-              {error && (
-                <Alert variant={error.includes('successful') ? 'default' : 'destructive'}>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-              
-              <TabsContent value="login" className="space-y-4">
-                <div>
-                  <Label htmlFor="studentId">{t('studentId')}</Label>
-                  <Input
-                    id="studentId"
-                    value={formData.studentId}
-                    onChange={(e) => setFormData({...formData, studentId: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">{t('password')}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    required
-                  />
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="register" className="space-y-4">
-                <div>
-                  <Label htmlFor="name">{t('name')}</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">{t('email')}</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="studentId">{t('studentId')}</Label>
-                  <Input
-                    id="studentId"
-                    value={formData.studentId}
-                    onChange={(e) => setFormData({...formData, studentId: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="password">{t('password')}</Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="bloodGroup">{t('bloodGroup')}</Label>
-                  <Input
-                    id="bloodGroup"
-                    value={formData.bloodGroup}
-                    onChange={(e) => setFormData({...formData, bloodGroup: e.target.value})}
-                    placeholder="e.g., A+, B-, O+"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="location">{t('location')}</Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
-                    placeholder="Current location or address"
-                  />
-                </div>
-              </TabsContent>
-              
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? t('updating') : (activeTab === 'login' ? t('login') : t('register'))}
-              </Button>
-            </form>
-          </Tabs>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      <div className="login-form-side">
+        <div className="login-form-container">
+          <div className="login-logo"><div className="logo-icon"><Shield size={22} /></div><div className="logo-text">{t('appName')}</div></div>
+          <h2 className="login-heading">{tab === 'login' ? 'Welcome back' : 'Create account'}</h2>
+          <p className="login-subheading">{tab === 'login' ? 'Sign in to your SafeTrack account' : 'Join the safety network'}</p>
+          <div className="tab-switcher">
+            <button className={`tab-btn ${tab === 'login' ? 'active' : ''}`} onClick={() => setTab('login')}>{t('login')}</button>
+            <button className={`tab-btn ${tab === 'register' ? 'active' : ''}`} onClick={() => setTab('register')}>{t('register')}</button>
+          </div>
+          {msg.text && <div className={msg.type === 'error' ? 'form-error' : 'form-success'}>{msg.text}</div>}
+          {tab === 'register' && (
+            <>
+              <div className="form-group"><label className="form-label">{t('name')}</label><input className="form-input" ref={nameRef} /></div>
+              <div className="form-group"><label className="form-label">{t('email')}</label><input className="form-input" type="email" ref={emailRef} /></div>
+            </>
+          )}
+          <div className="form-group"><label className="form-label">{t('studentId')}</label><input className="form-input" ref={sidRef} /></div>
+          <div className="form-group"><label className="form-label">{t('password')}</label><input className="form-input" type="password" ref={pwdRef} /></div>
+          {tab === 'register' && (
+            <>
+              <div className="form-group"><label className="form-label">{t('bloodGroup')}</label><input className="form-input" ref={bgRef} placeholder="e.g. A+, B-, O+" /></div>
+              <div className="form-group"><label className="form-label">{t('location')}</label><input className="form-input" ref={locRef} placeholder="Current location" /></div>
+            </>
+          )}
+          <button className="btn-primary" onClick={handleSubmit} disabled={loading}>
+            {loading ? t('updating') : (tab === 'login' ? t('login') : t('register'))}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
 const EmergencyAlert = () => {
-  const [alertMessage, setAlertMessage] = useState('');
+  const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [success, setSuccess] = useState(false);
   const { token, language } = useAuth();
-  const { t } = useTranslation();
-
-  const sendAlert = async () => {
+  const t = useT();
+  const send = async () => {
     setSending(true);
-    try {
-      await axios.post(`${API}/alerts?lang=${language}`, 
-        { message: alertMessage },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setSuccess(true);
-      setAlertMessage('');
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (error) {
-      console.error('Failed to send alert:', error);
-    } finally {
-      setSending(false);
-    }
+    try { await axios.post(`${API}/alerts?lang=${language}`, { message }, { headers: { Authorization: `Bearer ${token}` } }); setSuccess(true); setMessage(''); setTimeout(() => setSuccess(false), 4000); }
+    catch (e) { console.error(e); } finally { setSending(false); }
   };
-
   return (
-    <Card className="border-red-200 bg-red-50">
-      <CardHeader className="text-center">
-        <AlertTriangle className="h-16 w-16 text-red-600 mx-auto mb-4" />
-        <CardTitle className="text-2xl text-red-800">{t('emergencyAlert')}</CardTitle>
-        <CardDescription>
-          Press the button below to send an emergency alert to responders
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="text-center space-y-4">
-        {success && (
-          <Alert className="border-green-200 bg-green-50">
-            <AlertDescription className="text-green-800">{t('alertSent')}</AlertDescription>
-          </Alert>
-        )}
-        
-        <textarea
-          className="w-full p-3 border rounded-md"
-          placeholder="Optional: Describe your emergency..."
-          value={alertMessage}
-          onChange={(e) => setAlertMessage(e.target.value)}
-          rows={3}
-        />
-        
-        <Button
-          onClick={sendAlert}
-          disabled={sending}
-          size="lg"
-          className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 text-lg"
-        >
-          {sending ? t('updating') : t('sendAlert')}
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="emergency-card">
+      <div className="emergency-icon"><AlertTriangle size={32} /></div>
+      <h2 className="emergency-title">{t('emergencyAlert')}</h2>
+      <p className="emergency-desc">Press the button below to instantly alert emergency responders.</p>
+      {success && <div className="success-banner"><CheckCircle size={18} />{t('alertSent')}</div>}
+      <textarea className="emergency-textarea" placeholder="Optional: describe your emergency…" value={message} onChange={e => setMessage(e.target.value)} rows={3} />
+      <button className="btn-danger-lg" onClick={send} disabled={sending}><AlertTriangle size={20} />{sending ? t('updating') : t('sendAlert')}</button>
+    </div>
   );
 };
 
 const StudentProfile = () => {
   const { user, token, fetchUserProfile, language } = useAuth();
   const [contacts, setContacts] = useState(user?.emergency_contacts || []);
-  const [newContact, setNewContact] = useState({ name: '', relationship: '', phone: '', email: '' });
-  const [profileData, setProfileData] = useState({
-    name: user?.name || '',
-    blood_group: user?.blood_group || '',
-    location: user?.location || ''
-  });
+  const [nc, setNc] = useState({ name:'', relationship:'', phone:'', email:'' });
+  const [profile, setProfile] = useState({ name: user?.name||'', blood_group: user?.blood_group||'', location: user?.location||'' });
   const [saving, setSaving] = useState(false);
-  const { t } = useTranslation();
-
-  const addContact = () => {
-    if (newContact.name && newContact.phone) {
-      setContacts([...contacts, newContact]);
-      setNewContact({ name: '', relationship: '', phone: '', email: '' });
-    }
-  };
-
-  const removeContact = (index) => {
-    setContacts(contacts.filter((_, i) => i !== index));
-  };
-
-  const saveProfile = async () => {
+  const [saved, setSaved] = useState(false);
+  const t = useT();
+  const save = async () => {
     setSaving(true);
-    try {
-      await axios.put(`${API}/students/me?lang=${language}`, {
-        ...profileData,
-        emergency_contacts: contacts
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      await fetchUserProfile();
-    } catch (error) {
-      console.error('Failed to update profile:', error);
-    } finally {
-      setSaving(false);
-    }
+    try { await axios.put(`${API}/students/me?lang=${language}`, { ...profile, emergency_contacts: contacts }, { headers: { Authorization: `Bearer ${token}` } }); await fetchUserProfile(); setSaved(true); setTimeout(() => setSaved(false), 3000); }
+    catch (e) { console.error(e); } finally { setSaving(false); }
   };
-
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <User className="h-5 w-5" />
-            <span>{t('profile')}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="name">{t('name')}</Label>
-              <Input
-                id="name"
-                value={profileData.name}
-                onChange={(e) => setProfileData({...profileData, name: e.target.value})}
-              />
-            </div>
-            <div>
-              <Label htmlFor="bloodGroup">{t('bloodGroup')}</Label>
-              <Input
-                id="bloodGroup"
-                value={profileData.blood_group}
-                onChange={(e) => setProfileData({...profileData, blood_group: e.target.value})}
-              />
-            </div>
-            <div className="md:col-span-2">
-              <Label htmlFor="location">{t('location')}</Label>
-              <Input
-                id="location"
-                value={profileData.location}
-                onChange={(e) => setProfileData({...profileData, location: e.target.value})}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Phone className="h-5 w-5" />
-            <span>{t('emergencyContacts')}</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {contacts.map((contact, index) => (
-            <div key={index} className="flex items-center justify-between p-3 border rounded-md">
-              <div>
-                <p className="font-semibold">{contact.name}</p>
-                <p className="text-sm text-gray-600">{contact.relationship} - {contact.phone}</p>
-              </div>
-              <Button variant="outline" size="sm" onClick={() => removeContact(index)}>
-                Remove
-              </Button>
-            </div>
-          ))}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <Input
-              placeholder={t('contactName')}
-              value={newContact.name}
-              onChange={(e) => setNewContact({...newContact, name: e.target.value})}
-            />
-            <Input
-              placeholder={t('relationship')}
-              value={newContact.relationship}
-              onChange={(e) => setNewContact({...newContact, relationship: e.target.value})}
-            />
-            <Input
-              placeholder={t('phone')}
-              value={newContact.phone}
-              onChange={(e) => setNewContact({...newContact, phone: e.target.value})}
-            />
-            <Input
-              placeholder="Email (optional)"
-              value={newContact.email}
-              onChange={(e) => setNewContact({...newContact, email: e.target.value})}
-            />
-          </div>
-          
-          <Button onClick={addContact} variant="outline" className="w-full">
-            {t('addContact')}
-          </Button>
-        </CardContent>
-      </Card>
-
-      <Button onClick={saveProfile} disabled={saving} className="w-full">
-        {saving ? t('updating') : t('save')}
-      </Button>
+    <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+      <div className="card">
+        <div className="card-title"><User size={18} /> {t('profile')}</div>
+        <div className="profile-grid">
+          <div className="form-group" style={{marginBottom:0}}><label className="form-label">{t('name')}</label><input className="form-input" value={profile.name} onChange={e => setProfile(p=>({...p,name:e.target.value}))} /></div>
+          <div className="form-group" style={{marginBottom:0}}><label className="form-label">{t('bloodGroup')}</label><input className="form-input" value={profile.blood_group} onChange={e => setProfile(p=>({...p,blood_group:e.target.value}))} /></div>
+          <div className="form-group profile-full" style={{marginBottom:0}}><label className="form-label">{t('location')}</label><input className="form-input" value={profile.location} onChange={e => setProfile(p=>({...p,location:e.target.value}))} /></div>
+        </div>
+      </div>
+      <div className="card">
+        <div className="card-title"><Phone size={18} /> {t('emergencyContacts')}</div>
+        {contacts.map((c,i) => <div key={i} className="alert-item" style={{marginBottom:10}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><div style={{fontWeight:600,fontSize:14}}>{c.name}</div><div style={{fontSize:12,color:'var(--slate-500)'}}>{c.relationship} · {c.phone}</div></div><button className="btn-ghost" style={{color:'var(--red-600)'}} onClick={() => setContacts(p=>p.filter((_,j)=>j!==i))}>Remove</button></div></div>)}
+        <div className="profile-grid" style={{marginTop:12}}>
+          <div style={{marginBottom:0}}><input className="form-input" placeholder={t('contactName')} value={nc.name} onChange={e=>setNc(p=>({...p,name:e.target.value}))} /></div>
+          <div style={{marginBottom:0}}><input className="form-input" placeholder={t('relationship')} value={nc.relationship} onChange={e=>setNc(p=>({...p,relationship:e.target.value}))} /></div>
+          <div style={{marginBottom:0}}><input className="form-input" placeholder={t('phone')} value={nc.phone} onChange={e=>setNc(p=>({...p,phone:e.target.value}))} /></div>
+          <div style={{marginBottom:0}}><input className="form-input" placeholder="Email (optional)" value={nc.email} onChange={e=>setNc(p=>({...p,email:e.target.value}))} /></div>
+        </div>
+        <button className="btn-secondary" style={{width:'100%',marginTop:12}} onClick={() => { if(nc.name&&nc.phone){setContacts(p=>[...p,nc]);setNc({name:'',relationship:'',phone:'',email:''});} }}>+ {t('addContact')}</button>
+      </div>
+      {saved && <div className="form-success" style={{display:'flex',alignItems:'center',gap:8}}><CheckCircle size={16} /> Saved!</div>}
+      <button className="btn-primary" onClick={save} disabled={saving}>{saving ? t('saving') : t('save')}</button>
     </div>
   );
 };
@@ -548,179 +207,78 @@ const AdminDashboard = () => {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuth();
-  const { t } = useTranslation();
-
-  useEffect(() => {
-    fetchAlerts();
-  }, []);
-
+  const t = useT();
+  useEffect(() => { fetchAlerts(); }, []);
   const fetchAlerts = async () => {
-    try {
-      const response = await axios.get(`${API}/alerts/active`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAlerts(response.data);
-    } catch (error) {
-      console.error('Failed to fetch alerts:', error);
-    } finally {
-      setLoading(false);
-    }
+    try { const res = await axios.get(`${API}/alerts/active`, { headers: { Authorization: `Bearer ${token}` } }); setAlerts(res.data); }
+    catch (e) { console.error(e); } finally { setLoading(false); }
   };
-
-  const resolveAlert = async (alertId) => {
-    try {
-      await axios.put(`${API}/alerts/${alertId}`, 
-        { status: 'resolved' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchAlerts();
-    } catch (error) {
-      console.error('Failed to resolve alert:', error);
-    }
+  const resolve = async id => {
+    try { await axios.put(`${API}/alerts/${id}`, { status:'resolved' }, { headers: { Authorization: `Bearer ${token}` } }); fetchAlerts(); }
+    catch (e) { console.error(e); }
   };
-
-  if (loading) {
-    return <div className="text-center py-8">Loading alerts...</div>;
-  }
-
+  if (loading) return <div className="loading-state">Loading alerts…</div>;
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <AlertTriangle className="h-5 w-5 text-red-600" />
-          <span>{t('activeAlerts')}</span>
-          <Badge variant="secondary">{alerts.length}</Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {alerts.length === 0 ? (
-          <p className="text-center py-8 text-gray-500">{t('noAlerts')}</p>
-        ) : (
-          <div className="space-y-4">
-            {alerts.map((alert) => (
-              <div key={alert.id} className="border rounded-lg p-4 bg-red-50">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="font-semibold text-lg">{alert.student_name}</h3>
-                    <p className="text-sm text-gray-600">ID: {alert.student_id}</p>
-                  </div>
-                  <div className="text-right text-sm text-gray-500">
-                    <div className="flex items-center space-x-1">
-                      <Clock className="h-4 w-4" />
-                      <span>{new Date(alert.timestamp).toLocaleString()}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                  <div className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm">{alert.student_email}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">Blood Group: {alert.blood_group}</span>
-                  </div>
-                  {alert.location && (
-                    <div className="flex items-center space-x-2 md:col-span-2">
-                      <MapPin className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm">{alert.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                {alert.message && (
-                  <div className="mb-4">
-                    <p className="text-sm"><strong>Message:</strong> {alert.message}</p>
-                  </div>
-                )}
-
-                {alert.emergency_contacts.length > 0 && (
-                  <div className="mb-4">
-                    <h4 className="font-medium mb-2">{t('emergencyContacts')}:</h4>
-                    <div className="space-y-1">
-                      {alert.emergency_contacts.map((contact, index) => (
-                        <div key={index} className="text-sm text-gray-700">
-                          <strong>{contact.name}</strong> ({contact.relationship}) - {contact.phone}
-                          {contact.email && ` - ${contact.email}`}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <Button 
-                  onClick={() => resolveAlert(alert.id)}
-                  className="w-full bg-green-600 hover:bg-green-700"
-                >
-                  Mark as Resolved
-                </Button>
-              </div>
-            ))}
+    <div>
+      <div className="admin-header">
+        <div><div className="section-heading">{t('activeAlerts')}</div><div className="section-sub">{alerts.length} alert{alerts.length!==1?'s':''} requiring attention</div></div>
+        {alerts.length > 0 && <span className="count-badge">{alerts.length}</span>}
+      </div>
+      {alerts.length === 0 ? <div className="empty-state"><div className="empty-icon"><Bell size={24} /></div><div className="empty-title">{t('noAlerts')}</div></div>
+      : alerts.map(alert => (
+        <div key={alert.id} className="alert-item">
+          <div className="alert-header">
+            <div><div className="alert-student-name">{alert.student_name}</div><div className="alert-student-id">ID: {alert.student_id}</div></div>
+            <div className="alert-time"><Clock size={12} />{new Date(alert.timestamp).toLocaleString()}</div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <div className="alert-meta">
+            {alert.student_email && <div className="alert-meta-item"><Mail size={12} />{alert.student_email}</div>}
+            {alert.blood_group && <span className="blood-badge">⚕ {alert.blood_group}</span>}
+            {alert.location && <div className="alert-meta-item"><MapPin size={12} />{alert.location}</div>}
+          </div>
+          {alert.message && <div className="alert-message">"{alert.message}"</div>}
+          {alert.emergency_contacts?.length > 0 && <div className="contacts-list"><div className="contacts-title">{t('emergencyContacts')}</div>{alert.emergency_contacts.map((c,i) => <div key={i} className="contact-item"><Phone size={12} style={{color:'#94a3b8'}} /><span className="contact-name">{c.name}</span><span className="contact-rel">({c.relationship})</span><span>— {c.phone}</span></div>)}</div>}
+          <button className="btn-resolve" onClick={() => resolve(alert.id)}><CheckCircle size={15} style={{display:'inline',marginRight:6}} />Mark as Resolved</button>
+        </div>
+      ))}
+    </div>
   );
 };
 
 const Dashboard = () => {
-  const [activeTab, setActiveTab] = useState('alert');
+  const [tab, setTab] = useState('alert');
   const { user } = useAuth();
-  const { t } = useTranslation();
-
+  const t = useT();
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{minHeight:'100vh',background:'var(--slate-50)'}}>
       <Header />
-      
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="alert">{t('emergencyAlert')}</TabsTrigger>
-            <TabsTrigger value="profile">{t('profile')}</TabsTrigger>
-            {user?.is_admin && (
-              <TabsTrigger value="admin">{t('admin')}</TabsTrigger>
-            )}
-          </TabsList>
-
-          <div className="mt-8">
-            <TabsContent value="alert">
-              <EmergencyAlert />
-            </TabsContent>
-            
-            <TabsContent value="profile">
-              <StudentProfile />
-            </TabsContent>
-            
-            {user?.is_admin && (
-              <TabsContent value="admin">
-                <AdminDashboard />
-              </TabsContent>
-            )}
-          </div>
-        </Tabs>
+      <main className="app-main">
+        <nav className="nav-tabs">
+          <button className={`nav-tab ${tab==='alert'?'active danger':''}`} onClick={()=>setTab('alert')}><AlertTriangle size={15}/> {t('emergencyAlert')}</button>
+          <button className={`nav-tab ${tab==='profile'?'active':''}`} onClick={()=>setTab('profile')}><User size={15}/> {t('profile')}</button>
+          {user?.is_admin && <button className={`nav-tab ${tab==='admin'?'active':''}`} onClick={()=>setTab('admin')}><Bell size={15}/> {t('admin')}</button>}
+        </nav>
+        {tab==='alert' && <EmergencyAlert />}
+        {tab==='profile' && <StudentProfile />}
+        {tab==='admin' && user?.is_admin && <AdminDashboard />}
       </main>
     </div>
   );
 };
 
+const ProtectedRoute = ({children}) => { const {token} = useAuth(); return token ? children : <Navigate to="/login" />; };
+
 function App() {
   return (
     <AuthProvider>
-      <div className="App">
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<LoginRegister />} />
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          </Routes>
-        </BrowserRouter>
-      </div>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/login" element={<LoginRegister />} />
+          <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   );
 }
-
-const ProtectedRoute = ({ children }) => {
-  const { token } = useAuth();
-  return token ? children : <Navigate to="/login" />;
-};
 
 export default App;
