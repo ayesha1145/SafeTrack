@@ -4,7 +4,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { Shield, AlertTriangle, Phone, Mail, MapPin, Clock, User, Languages, CheckCircle, Bell, LogOut } from 'lucide-react';
 
-const API = 'http://127.0.0.1:8000/api';
+// Reads the backend URL from the Vercel/build environment variable.
+// Falls back to localhost only for local development (npm start).
+const API = `${process.env.REACT_APP_BACKEND_URL || 'http://127.0.0.1:8000'}/api`;
 const AuthContext = React.createContext();
 
 const AuthProvider = ({ children }) => {
