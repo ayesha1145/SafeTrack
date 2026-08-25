@@ -13,15 +13,20 @@ const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [language, setLanguage] = useState('en');
+  const [languages, setLanguages] = useState([{ code: 'en', name: 'English' }, { code: 'bn', name: 'বাংলা (Bengali)' }]);
   useEffect(() => { if (token) fetchUserProfile(); }, [token]);
+  useEffect(() => {
+    // Pull the supported language list from the backend so the picker
+    // reflects what Azure Translator actually offers, not a hardcoded set.
+    axios.get(`${API}/languages`).then(r => { if (r.data?.languages?.length) setLanguages(r.data.languages); }).catch(() => {});
+  }, []);
   const fetchUserProfile = async () => {
     try { const r = await axios.get(`${API}/students/me`, { headers: { Authorization: `Bearer ${token}` } }); setUser(r.data); }
     catch { logout(); }
   };
   const login = (tok, userData) => { localStorage.setItem('token', tok); setToken(tok); setUser(userData); };
   const logout = () => { localStorage.removeItem('token'); setToken(null); setUser(null); };
-  const toggleLanguage = () => setLanguage(p => p === 'en' ? 'bn' : 'en');
-  return <AuthContext.Provider value={{ user, token, language, login, logout, toggleLanguage, fetchUserProfile }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, token, language, setLanguage, languages, login, logout, fetchUserProfile }}>{children}</AuthContext.Provider>;
 };
 
 const useAuth = () => React.useContext(AuthContext);
@@ -31,10 +36,10 @@ const T = {
   bn: { appName:'SafeTrack', tagline:'ছাত্রছাত্রী নিরাপত্তা', login:'লগইন', register:'নিবন্ধন', studentId:'ছাত্র আইডি', password:'পাসওয়ার্ড', name:'পূর্ণ নাম', email:'ইমেইল', bloodGroup:'রক্তের গ্রুপ', location:'অবস্থান', emergencyContacts:'জরুরি যোগাযোগ', contactName:'নাম', relationship:'সম্পর্ক', phone:'ফোন', addContact:'যোগ করুন', emergencyAlert:'জরুরি সতর্কতা', sendAlert:'পাঠান', profile:'প্রোফাইল', activeAlerts:'সক্রিয়', logout:'লগআউট', admin:'অ্যাডমিন', welcome:'স্বাগতম', noAlerts:'কোন সতর্কতা নেই', alertSent:'পাঠানো হয়েছে!', updating:'পাঠানো হচ্ছে…', save:'সংরক্ষণ', saving:'সংরক্ষণ হচ্ছে…' }
 };
 
-const useT = () => { const { language } = useAuth(); return k => T[language][k] || k; };
+const useT = () => { const { language } = useAuth(); return k => (T[language] && T[language][k]) || T.en[k] || k; };
 
 const Header = () => {
-  const { user, logout, toggleLanguage, language } = useAuth();
+  const { user, logout, language, setLanguage, languages } = useAuth();
   const t = useT();
   return (
     <header className="app-header">
@@ -44,7 +49,17 @@ const Header = () => {
           <div><div className="header-title">{t('appName')}</div><div className="header-subtitle">{t('tagline')}</div></div>
         </div>
         <div className="header-actions">
-          <button className="btn-ghost" onClick={toggleLanguage}><Languages size={15} />{language === 'en' ? 'বাংলা' : 'English'}</button>
+          <div className="lang-picker">
+            <Languages size={15} />
+            <select
+              className="lang-select"
+              value={language}
+              onChange={e => setLanguage(e.target.value)}
+              aria-label="Select language"
+            >
+              {languages.map(l => <option key={l.code} value={l.code}>{l.name}</option>)}
+            </select>
+          </div>
           {user && <><span className="header-user">{t('welcome')}, {user.name}</span><button className="btn-ghost" onClick={logout}><LogOut size={15} />{t('logout')}</button></>}
         </div>
       </div>
