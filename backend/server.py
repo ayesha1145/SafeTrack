@@ -33,6 +33,7 @@ import jwt
 import asyncio
 from bson import ObjectId
 import notifications
+import monitoring
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -432,6 +433,12 @@ async def create_emergency_alert(
         "event": "new_alert",
         "alert": {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in alert_dict.items() if k != "_id"}
     })
+
+    monitoring.track_event("alert_created", {
+        "is_sos": False,
+        "has_location": bool(alert_data.latitude and alert_data.longitude),
+        "lang": lang,
+    })
     
     return ApiResponse(
         message=get_translation("alert_created", lang),
@@ -485,6 +492,12 @@ async def create_sos_alert(
     await manager.broadcast({
         "event": "new_alert",
         "alert": {k: (v.isoformat() if isinstance(v, datetime) else v) for k, v in alert_dict.items() if k != "_id"}
+    })
+
+    monitoring.track_event("sos_triggered", {
+        "is_sos": True,
+        "has_location": bool(sos_data.latitude and sos_data.longitude),
+        "lang": lang,
     })
 
     return ApiResponse(
@@ -624,6 +637,18 @@ async def update_alert_status(
         "alert_id": alert_id,
         "status": alert_update.status,
     })
+
+    if alert_update.status == "resolved":
+        created = existing_alert.get("timestamp")
+        response_seconds = None
+        if created:
+            if created.tzinfo is None:
+                created = created.replace(tzinfo=timezone.utc)
+            response_seconds = (datetime.now(timezone.utc) - created).total_seconds()
+        monitoring.track_event("alert_resolved", {
+            "is_sos": existing_alert.get("is_sos", False),
+            "response_seconds": response_seconds,
+        })
     
     return ApiResponse(message="Alert updated successfully", lang=lang)
 
