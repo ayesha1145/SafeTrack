@@ -71,7 +71,7 @@ const LoginRegister = () => {
   const [tab, setTab] = useState('login');
   const [msg, setMsg] = useState({ text: '', type: '' });
   const [loading, setLoading] = useState(false);
-  const { login, language } = useAuth();
+  const { login, language, languages } = useAuth();
   const t = useT();
   const sidRef = useRef();
   const pwdRef = useRef();
@@ -116,11 +116,11 @@ const LoginRegister = () => {
         <div className="hero-content">
           <div className="hero-badge"><Shield size={12} /> Emergency Response Platform</div>
           <h1 className="hero-title">Stay Safe. <span>Stay Connected.</span></h1>
-          <p className="hero-desc">A real-time safety platform built for students — instant emergency alerts, secure authentication, and bilingual support.</p>
+          <p className="hero-desc">A real-time safety platform built for students — instant emergency alerts, secure authentication, and multi-language support.</p>
           <div className="hero-stats">
             <div className="stat-item"><div className="stat-number">65%</div><div className="stat-label">Faster alerts</div></div>
             <div className="stat-item"><div className="stat-number">2K+</div><div className="stat-label">Users protected</div></div>
-            <div className="stat-item"><div className="stat-number">2</div><div className="stat-label">Languages</div></div>
+            <div className="stat-item"><div className="stat-number">{languages.length}+</div><div className="stat-label">Languages</div></div>
           </div>
         </div>
       </div>
