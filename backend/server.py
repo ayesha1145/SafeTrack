@@ -1,4 +1,3 @@
-
 # ============================================================
 # SafeTrack Backend (FastAPI)
 # Author: [Your Name]
@@ -262,6 +261,13 @@ class ApiResponse(BaseModel):
 @api_router.get("/status")
 async def get_api_status():
     return {"message": "SafeTrack API is running", "status": "healthy", "timestamp": datetime.now(timezone.utc)}
+
+@api_router.get("/debug-env")
+async def debug_env():
+    # TEMPORARY: reveals the raw value of AZURE_STORAGE_CONTAINER for
+    # debugging a malformed URL issue. Remove after confirming the fix.
+    raw = os.environ.get("AZURE_STORAGE_CONTAINER")
+    return {"AZURE_STORAGE_CONTAINER": repr(raw)}
 
 @api_router.get("/languages")
 async def get_supported_languages():
@@ -797,4 +803,4 @@ async def create_admin_user():
 # Notes:
 # - Keep translations in a small dict for now; later can move to /locales/*.json
 # - Default to English when ?lang is missing/invalid
-# - This design keeps API stable and adds i18n progressivelydo in
+# - This design keeps API stable and adds i18n progressively
