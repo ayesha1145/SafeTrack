@@ -11,13 +11,16 @@ SafeTrack is a full-featured, privacy-first safety platform built for instant em
 
 ## 📸 Screenshots
 
-| Login / Register | Emergency Alert (Live) |
+| Emergency Alert + SOS | Admin Panel |
 |---|---|
-| ![Login page](screenshots/login-page.png) | ![Emergency alert dashboard](screenshots/emergency-alert.png) |
+| ![Emergency alert with one-tap SOS](screenshots/emergency-sos.png) | ![Admin panel resolving an alert](screenshots/admin-panel.png) |
+
+**Live analytics dashboard** — resolution rate, response time, and daily alert volume computed from real data:
+![Analytics dashboard](screenshots/analytics-dashboard.png)
 
 
 ## 🚀 Overview
-SafeTrack provides an interactive safety system designed to protect students during emergencies. It integrates a **FastAPI backend** with **MongoDB Atlas** for secure data operations, a **React frontend** for real-time alert visualization, and multiple **Azure AI services** for translation and monitoring. Students can report incidents in one tap, view their alert history, and administrators can oversee live cases with real-time push updates — all through one centralized, multilingual dashboard.
+SafeTrack provides an interactive safety system designed to protect students during emergencies. It integrates a **FastAPI backend** with **MongoDB Atlas** for secure data operations, a **React frontend** for real-time alert visualization, and multiple **Azure AI services** for translation, storage, and monitoring. Students can report incidents in one tap via the SOS button, attach photo evidence, view their alert history, and administrators can oversee live cases with real-time push updates and a dedicated analytics dashboard — all through one centralized, multilingual interface.
 
 ## ✨ Core Features
 - 🆘 **Emergency Alerts:** Students can instantly send verified alerts with ID, blood group, contact info, and location
@@ -30,7 +33,7 @@ SafeTrack provides an interactive safety system designed to protect students dur
 - 🛡️ **Rate Limiting:** Protects the alert and login endpoints from abuse, without ever blocking a genuine emergency
 - 📊 **Admin Analytics:** Resolution rate, average response time, daily alert volume, and SOS breakdown — all computed live from real data
 - 📈 **Application Monitoring:** Azure Application Insights telemetry tracks alert creation, SOS triggers, and response times in production
-- 🖼️ **Photo Evidence Uploads:** Students can attach a photo (injury, hazard, scene) to an emergency alert, stored via Azure Blob Storage *(in progress)*
+- 🖼️ **Photo Evidence Uploads:** Students can attach a photo (injury, hazard, scene) to an emergency alert, stored securely via Azure Blob Storage with time-limited signed URLs
 - 🧭 **Real-Time Tracking:** Displays geolocation and timestamps for all alerts
 - 💾 **MongoDB Storage:** Fast, flexible, and reliable NoSQL database (MongoDB Atlas)
 - 🧩 **Modular APIs:** RESTful, scalable backend routes for users, alerts, and analytics
@@ -194,20 +197,21 @@ REACT_APP_BACKEND_URL=https://your-backend-url.onrender.com
 - **WebSocket auth:** Since browsers can't send Authorization headers on WebSocket handshakes, the JWT is passed as a query parameter and validated server-side before the connection is accepted; non-admins are rejected immediately.
 
 ## 🔮 Future Enhancements
-- Frontend UI for the admin analytics dashboard (backend endpoint is live; charting UI is next)
-- Frontend UI for photo evidence uploads (backend endpoint is live; upload form is next)
 - SMS alerts as a fallback notification channel alongside email
 - Geofencing and campus safety mapping
+- Admin roles/permissions beyond a single flat is_admin flag
 
 ## 💡 Project Highlights
 - Clean modular architecture separating backend and frontend logic, with third-party integrations isolated into their own soft-failing modules
 - Secure, authenticated APIs with robust token validation and rate limiting
-- Genuinely dynamic multilingual support via Azure Translator, not a hardcoded language pair
+- Genuinely dynamic multilingual support via Azure Translator (10+ languages live in the UI, 100+ available), not a hardcoded language pair
+- One-tap SOS with automatic GPS capture, plus photo evidence upload with secure signed URLs
+- A live admin analytics dashboard (resolution rate, response time, daily trend) built on real request data, not mock numbers
 - Real-time architecture (WebSockets) alongside traditional REST
 - Production monitoring via Azure Application Insights
 - Scalable FastAPI backend and MongoDB Atlas data store
 - Automated testing ensures data consistency and API stability
-- Fully deployed and live on Render (backend) and Vercel (frontend)
+- Fully deployed and live on Render (backend) and Vercel (frontend), with every feature above verified working end-to-end in production
 
 ## 💬 Contribution Guide
 1. Fork the repository
