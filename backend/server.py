@@ -1,3 +1,4 @@
+
 # ============================================================
 # SafeTrack Backend (FastAPI)
 # Author: [Your Name]
@@ -34,10 +35,11 @@ import asyncio
 from bson import ObjectId
 import notifications
 import monitoring
+import photo_storage
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from fastapi import Request, WebSocket, WebSocketDisconnect
+from fastapi import Request, WebSocket, WebSocketDisconnect, UploadFile, File
 
 # ------------------------------------------------------------
 # Load environment variables from .env file
@@ -228,6 +230,7 @@ class Alert(BaseModel):
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     status: str = "active"  # active, resolved
     message: Optional[str] = None
+    photo_url: Optional[str] = None
 
 class AlertCreate(BaseModel):
     message: Optional[str] = None
@@ -506,6 +509,57 @@ async def create_sos_alert(
         lang=lang
     )
 
+@api_router.post("/alerts/{alert_id}/photo", response_model=ApiResponse)
+@limiter.limit("10/minute")
+async def upload_alert_photo(
+    request: Request,
+    alert_id: str,
+    photo: UploadFile = File(...),
+    current_user: Student = Depends(get_current_user),
+    lang: str = "en"
+):
+    """Attach a photo to an existing alert (evidence of an injury, hazard,
+    or the scene). Only the alert's own reporter or an admin can attach a
+    photo. If photo storage isn't configured or the upload fails, the
+    endpoint still returns success for the alert itself — the photo is
+    an enhancement, never a blocker for a safety-critical report."""
+    alert = await db.alerts.find_one({"id": alert_id})
+    if alert is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+
+    if alert.get("student_id") != current_user.student_id and not current_user.is_admin:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to modify this alert")
+
+    file_bytes = await photo.read()
+    photo_url = await photo_storage.upload_alert_photo(
+        file_bytes=file_bytes,
+        content_type=photo.content_type,
+        alert_id=alert_id,
+    )
+
+    if photo_url is None:
+        return ApiResponse(
+            message="Alert saved, but photo upload was unavailable",
+            data={"alert_id": alert_id, "photo_url": None},
+            lang=lang
+        )
+
+    await db.alerts.update_one({"id": alert_id}, {"$set": {"photo_url": photo_url}})
+
+    await manager.broadcast({
+        "event": "alert_updated",
+        "alert_id": alert_id,
+        "photo_url": photo_url,
+    })
+
+    monitoring.track_event("alert_photo_uploaded", {"alert_id": alert_id})
+
+    return ApiResponse(
+        message="Photo attached successfully",
+        data={"alert_id": alert_id, "photo_url": photo_url},
+        lang=lang
+    )
+
 @api_router.get("/alerts", response_model=List[Alert])
 async def get_alerts(
     status_filter: Optional[str] = "active",
@@ -743,4 +797,4 @@ async def create_admin_user():
 # Notes:
 # - Keep translations in a small dict for now; later can move to /locales/*.json
 # - Default to English when ?lang is missing/invalid
-# - This design keeps API stable and adds i18n progressively
+# - This design keeps API stable and adds i18n progressivelydo in
