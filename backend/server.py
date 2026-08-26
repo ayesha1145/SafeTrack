@@ -264,10 +264,18 @@ async def get_api_status():
 
 @api_router.get("/debug-env")
 async def debug_env():
-    # TEMPORARY: reveals the raw value of AZURE_STORAGE_CONTAINER for
-    # debugging a malformed URL issue. Remove after confirming the fix.
-    raw = os.environ.get("AZURE_STORAGE_CONTAINER")
-    return {"AZURE_STORAGE_CONTAINER": repr(raw)}
+    # TEMPORARY: reveals raw env var values for debugging a malformed
+    # blob URL issue. Remove after confirming the fix.
+    container = os.environ.get("AZURE_STORAGE_CONTAINER")
+    conn_str = os.environ.get("AZURE_STORAGE_CONNECTION_STRING", "")
+    # Show the tail end of the connection string (after EndpointSuffix=)
+    # without exposing the full secret account key.
+    tail = conn_str.split("EndpointSuffix=")[-1] if "EndpointSuffix=" in conn_str else "NOT FOUND"
+    return {
+        "AZURE_STORAGE_CONTAINER": repr(container),
+        "connection_string_length": len(conn_str),
+        "connection_string_tail_after_EndpointSuffix": repr(tail),
+    }
 
 @api_router.get("/languages")
 async def get_supported_languages():
