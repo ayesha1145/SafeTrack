@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import axios from 'axios';
-import { Shield, AlertTriangle, Phone, Mail, MapPin, Clock, User, Languages, CheckCircle, Bell, LogOut } from 'lucide-react';
+import { Shield, AlertTriangle, Phone, Mail, MapPin, Clock, User, Languages, CheckCircle, Bell, LogOut, Zap, BarChart3, Camera, TrendingUp } from 'lucide-react';
 
 // Reads the backend URL from the Vercel/build environment variable.
 // Falls back to localhost only for local development (npm start).
@@ -160,22 +160,99 @@ const LoginRegister = () => {
 const EmergencyAlert = () => {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [sendingSOS, setSendingSOS] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [lastAlertId, setLastAlertId] = useState(null);
+  const [photo, setPhoto] = useState(null);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoUploaded, setPhotoUploaded] = useState(false);
   const { token, language } = useAuth();
   const t = useT();
+
   const send = async () => {
     setSending(true);
-    try { await axios.post(`${API}/alerts?lang=${language}`, { message }, { headers: { Authorization: `Bearer ${token}` } }); setSuccess(true); setMessage(''); setTimeout(() => setSuccess(false), 4000); }
-    catch (e) { console.error(e); } finally { setSending(false); }
+    try {
+      const res = await axios.post(`${API}/alerts?lang=${language}`, { message }, { headers: { Authorization: `Bearer ${token}` } });
+      setSuccess(true);
+      setMessage('');
+      setLastAlertId(res.data?.data?.alert_id || null);
+      setTimeout(() => setSuccess(false), 4000);
+    } catch (e) { console.error(e); } finally { setSending(false); }
   };
+
+  // One-tap SOS: auto-captures GPS and files an alert instantly, no
+  // typing required. Falls back gracefully if location access is denied
+  // or unavailable — the alert still goes through without coordinates.
+  const sendSOS = async () => {
+    setSendingSOS(true);
+    const fileWithCoords = (lat, lng) => {
+      axios.post(`${API}/alerts/sos?lang=${language}`, { latitude: lat, longitude: lng }, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => { setSuccess(true); setLastAlertId(res.data?.data?.alert_id || null); setTimeout(() => setSuccess(false), 4000); })
+        .catch(e => console.error(e))
+        .finally(() => setSendingSOS(false));
+    };
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        pos => fileWithCoords(pos.coords.latitude, pos.coords.longitude),
+        () => fileWithCoords(null, null),
+        { timeout: 5000 }
+      );
+    } else {
+      fileWithCoords(null, null);
+    }
+  };
+
+  const uploadPhoto = async () => {
+    if (!photo || !lastAlertId) return;
+    setUploadingPhoto(true);
+    try {
+      const form = new FormData();
+      form.append('photo', photo);
+      await axios.post(`${API}/alerts/${lastAlertId}/photo?lang=${language}`, form, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+      });
+      setPhotoUploaded(true);
+      setPhoto(null);
+      setTimeout(() => setPhotoUploaded(false), 4000);
+    } catch (e) { console.error(e); } finally { setUploadingPhoto(false); }
+  };
+
   return (
     <div className="emergency-card">
       <div className="emergency-icon"><AlertTriangle size={32} /></div>
       <h2 className="emergency-title">{t('emergencyAlert')}</h2>
       <p className="emergency-desc">Press the button below to instantly alert emergency responders.</p>
       {success && <div className="success-banner"><CheckCircle size={18} />{t('alertSent')}</div>}
+      {photoUploaded && <div className="success-banner"><CheckCircle size={18} />Photo attached to alert</div>}
+
+      <button className="btn-sos" onClick={sendSOS} disabled={sendingSOS || sending} style={{
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        background: '#7f1d1d', color: '#fff', border: 'none', borderRadius: 14, padding: '18px',
+        fontSize: 18, fontWeight: 800, letterSpacing: 0.5, marginBottom: 16, cursor: 'pointer',
+        boxShadow: '0 0 0 4px rgba(127,29,29,0.15)'
+      }}>
+        <Zap size={22} />
+        {sendingSOS ? 'Sending SOS…' : 'ONE-TAP SOS'}
+      </button>
+      <p style={{ fontSize: 12, color: 'var(--slate-500)', textAlign: 'center', marginTop: -10, marginBottom: 18 }}>
+        Instantly alerts responders with your location — no typing needed
+      </p>
+
       <textarea className="emergency-textarea" placeholder="Optional: describe your emergency…" value={message} onChange={e => setMessage(e.target.value)} rows={3} />
-      <button className="btn-danger-lg" onClick={send} disabled={sending}><AlertTriangle size={20} />{sending ? t('updating') : t('sendAlert')}</button>
+      <button className="btn-danger-lg" onClick={send} disabled={sending || sendingSOS}><AlertTriangle size={20} />{sending ? t('updating') : t('sendAlert')}</button>
+
+      {lastAlertId && (
+        <div className="card" style={{ marginTop: 16 }}>
+          <div className="card-title"><Camera size={16} /> Attach a photo (optional)</div>
+          <p style={{ fontSize: 12, color: 'var(--slate-500)', marginBottom: 10 }}>Evidence of an injury, hazard, or the scene — helps responders.</p>
+          <input type="file" accept="image/*" onChange={e => setPhoto(e.target.files?.[0] || null)} />
+          {photo && (
+            <button className="btn-secondary" style={{ marginTop: 10, width: '100%' }} onClick={uploadPhoto} disabled={uploadingPhoto}>
+              {uploadingPhoto ? 'Uploading…' : `Attach ${photo.name}`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -254,10 +331,81 @@ const AdminDashboard = () => {
             {alert.location && <div className="alert-meta-item"><MapPin size={12} />{alert.location}</div>}
           </div>
           {alert.message && <div className="alert-message">"{alert.message}"</div>}
+          {alert.photo_url && <div style={{ margin: '10px 0' }}><a href={alert.photo_url} target="_blank" rel="noopener noreferrer"><img src={alert.photo_url} alt="Alert evidence" style={{ maxWidth: 180, borderRadius: 8, border: '1px solid var(--slate-200)' }} /></a></div>}
+          {alert.latitude && alert.longitude && <a href={`https://www.google.com/maps?q=${alert.latitude},${alert.longitude}`} target="_blank" rel="noopener noreferrer" className="alert-meta-item" style={{ display: 'inline-flex' }}><MapPin size={12} /> View GPS location</a>}
           {alert.emergency_contacts?.length > 0 && <div className="contacts-list"><div className="contacts-title">{t('emergencyContacts')}</div>{alert.emergency_contacts.map((c,i) => <div key={i} className="contact-item"><Phone size={12} style={{color:'#94a3b8'}} /><span className="contact-name">{c.name}</span><span className="contact-rel">({c.relationship})</span><span>— {c.phone}</span></div>)}</div>}
           <button className="btn-resolve" onClick={() => resolve(alert.id)}><CheckCircle size={15} style={{display:'inline',marginRight:6}} />Mark as Resolved</button>
         </div>
       ))}
+    </div>
+  );
+};
+
+const AnalyticsDashboard = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const { token } = useAuth();
+  useEffect(() => { fetchAnalytics(); }, []);
+  const fetchAnalytics = async () => {
+    try { const res = await axios.get(`${API}/analytics`, { headers: { Authorization: `Bearer ${token}` } }); setData(res.data); }
+    catch (e) { console.error(e); } finally { setLoading(false); }
+  };
+  if (loading) return <div className="loading-state">Loading analytics…</div>;
+  if (!data) return <div className="empty-state"><div className="empty-title">Analytics unavailable</div></div>;
+
+  const formatSeconds = s => {
+    if (s === null || s === undefined) return '—';
+    if (s < 60) return `${Math.round(s)}s`;
+    return `${Math.round(s / 60)}m`;
+  };
+  const maxCount = Math.max(1, ...(data.daily_trend || []).map(d => d.count));
+
+  return (
+    <div>
+      <div className="admin-header">
+        <div><div className="section-heading">Analytics</div><div className="section-sub">Last {data.window_days} days</div></div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 14, marginBottom: 20 }}>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--slate-900)' }}>{data.total_alerts}</div>
+          <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>Total alerts</div>
+        </div>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#dc2626' }}>{data.active_alerts}</div>
+          <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>Active now</div>
+        </div>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#16a34a' }}>{data.resolution_rate !== null ? `${Math.round(data.resolution_rate * 100)}%` : '—'}</div>
+          <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>Resolution rate</div>
+        </div>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--slate-900)' }}>{formatSeconds(data.avg_response_time_seconds)}</div>
+          <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>Avg. response time</div>
+        </div>
+        <div className="card" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: 28, fontWeight: 800, color: '#7f1d1d' }}>{data.sos_alerts}</div>
+          <div style={{ fontSize: 12, color: 'var(--slate-500)' }}>SOS alerts</div>
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-title"><TrendingUp size={16} /> Daily alert volume</div>
+        {(!data.daily_trend || data.daily_trend.length === 0) ? (
+          <p style={{ fontSize: 13, color: 'var(--slate-500)' }}>No alerts recorded yet in this window.</p>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 120, marginTop: 12 }}>
+            {data.daily_trend.map((d, i) => (
+              <div key={i} title={`${d.date}: ${d.count}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                <div style={{
+                  width: '100%', background: '#dc2626', borderRadius: '4px 4px 0 0',
+                  height: `${Math.max(4, (d.count / maxCount) * 100)}px`
+                }} />
+                <div style={{ fontSize: 9, color: 'var(--slate-500)', writingMode: 'vertical-rl', height: 32 }}>{d.date.slice(5)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -274,10 +422,12 @@ const Dashboard = () => {
           <button className={`nav-tab ${tab==='alert'?'active danger':''}`} onClick={()=>setTab('alert')}><AlertTriangle size={15}/> {t('emergencyAlert')}</button>
           <button className={`nav-tab ${tab==='profile'?'active':''}`} onClick={()=>setTab('profile')}><User size={15}/> {t('profile')}</button>
           {user?.is_admin && <button className={`nav-tab ${tab==='admin'?'active':''}`} onClick={()=>setTab('admin')}><Bell size={15}/> {t('admin')}</button>}
+          {user?.is_admin && <button className={`nav-tab ${tab==='analytics'?'active':''}`} onClick={()=>setTab('analytics')}><BarChart3 size={15}/> Analytics</button>}
         </nav>
         {tab==='alert' && <EmergencyAlert />}
         {tab==='profile' && <StudentProfile />}
         {tab==='admin' && user?.is_admin && <AdminDashboard />}
+        {tab==='analytics' && user?.is_admin && <AnalyticsDashboard />}
       </main>
     </div>
   );
